@@ -1,0 +1,89 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: nginx
+spec:
+  storageClassName: local-path
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/root/k3s-demo/storage/nginx"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+  annotations:
+    monitoring: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: nginx
+        persistentVolumeClaim:
+          claimName: nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - port: 8081
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx
+  sessionAffinity: None
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefixStrip
+spec:
+  rules:
+  - host: k3s-demo
+    http:
+      paths:
+      - path: /mynginx
+        backend:
+          serviceName: nginx
+          servicePort: 8081
