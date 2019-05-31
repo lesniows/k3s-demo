@@ -13,8 +13,11 @@ kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisione
 
 ## How to deploy kubernetes dashboard on k3s
 kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+
 kubectl proxy &
+
 kubectl create serviceaccount dashboard -n default
+
 kubectl create clusterrolebinding dashboard-admin -n default  --clusterrole=cluster-admin  --serviceaccount=default:dashboard
 
 ## How to get token to kubernetes dashboard
